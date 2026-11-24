@@ -248,6 +248,89 @@
   sb.auth.onAuthStateChange(async()=>{await refreshSession()});
   loadData(); refreshSession();
 })();
-</script>
+document.addEventListener("click", function(e) {
+  if (e.target.closest("[data-edit]")) return;
+
+  const dish = e.target.closest("#menu .dish");
+  if (!dish) return;
+
+  const img = dish.querySelector("img");
+  const name = dish.querySelector(".dish-name");
+  const desc = dish.querySelector(".dish-desc");
+  const price = dish.querySelector(".price");
+
+  const overlay = document.createElement("div");
+  overlay.style.cssText = `
+    position:fixed;
+    inset:0;
+    z-index:99999;
+    background:rgba(0,0,0,.88);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+  `;
+
+  const card = document.createElement("div");
+  card.style.cssText = `
+    background:#34271e;
+    border:1px solid #d8bd83;
+    border-radius:20px;
+    width:100%;
+    max-width:480px;
+    overflow:hidden;
+    color:#fff;
+    position:relative;
+  `;
+
+  const photo = document.createElement("img");
+  photo.src = img.src;
+  photo.style.cssText = `
+    width:100%;
+    height:300px;
+    object-fit:cover;
+    display:block;
+  `;
+
+  const content = document.createElement("div");
+  content.style.cssText = "padding:22px;";
+
+  const title = document.createElement("h2");
+  title.textContent = name.textContent;
+  title.style.cssText = "font-size:25px;margin:0 0 12px;";
+
+  const description = document.createElement("p");
+  description.textContent = desc ? desc.textContent : "";
+  description.style.cssText = "font-size:16px;line-height:1.5;";
+
+  const cost = document.createElement("div");
+  cost.textContent = price.textContent;
+  cost.style.cssText = "color:#f2d58c;font-size:25px;font-weight:bold;margin-top:18px;";
+
+  const close = document.createElement("button");
+  close.textContent = "✕";
+  close.style.cssText = `
+    position:absolute;
+    right:12px;
+    top:12px;
+    border:0;
+    border-radius:50%;
+    width:40px;
+    height:40px;
+    font-size:22px;
+    background:#fff;
+    cursor:pointer;
+  `;
+
+  content.append(title, description, cost);
+  card.append(photo, close, content);
+  overlay.append(card);
+  document.body.append(overlay);
+
+  close.onclick = () => overlay.remove();
+  overlay.onclick = e => {
+    if (e.target === overlay) overlay.remove();
+  };
+});</script>
 </body>
 </html>
