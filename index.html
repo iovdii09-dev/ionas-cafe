@@ -198,11 +198,9 @@ document.addEventListener("touchend", e => {
   function renderAdmin(){
     $("adminPanel").classList.toggle("show",isAdmin);
     $("adminOpen").style.display=isAdmin?"none":"inline-block";
-    if(!isAdmin)return;
-    $("adminList").innerHTML=dishes.map(d=>`<div class="admin-row"><div><strong>${esc(d.name)}</strong><br><small>${money(d.price)} · ${esc(categories.find(c=>c.id===d.category_id)?.name||"")}</small></div><div class="row-actions"><button class="edit-small" data-edit="${esc(d.id)}">Змінити</button><button class="edit-small" data-hide="${esc(d.id)}">Приховати</button></div></div>`).join("") || '<div class="intro">Поки немає доступних страв.</div>';
-    $("adminList").querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>openDishForm(b.dataset.edit)));
-    $("adminList").querySelectorAll("[data-hide]").forEach(b=>b.addEventListener("click",()=>toggleAvailability(b.dataset.hide,false)));
-    $("menu").querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>openDishForm(b.dataset.edit)));
+    if(!isAdmin)return;Приховати</button>
+$("adminList").innerHTML=dishes.map(d=>`<div class="admin-row"><div><strong>${esc(d.name)}</strong><br><small>${money(d.price)} · ${esc(categories.find(c=>c.id===d.category_id)?.name||"")}</small></div><div class="row-actions"><button class="edit-small" data-edit="${esc(d.id)}">Змінити</button><button class="edit-small" data-hide="${esc(d.id)}">Приховати</button><button class="edit-small" data-delete="${esc(d.id)}">Видалити</button></div></div>`).join("") || '<div class="intro">Поки немає доступних страв.</div>';    $("adminList").querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>openDishForm(b.dataset.edit)));
+$("adminList").querySelectorAll("[data-delete]").forEach(b=>b.addEventListener("click",()=>deleteDish(b.dataset.delete)));    $("menu").querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>openDishForm(b.dataset.edit)));
   }
 
   function openDishForm(id){
@@ -269,11 +267,14 @@ document.addEventListener("touchend", e => {
     if(result.error){$("dishError").textContent=result.error.message;return}
     hideModals(); await loadData();
   });
-  async function toggleAvailability(id,value){
-    const {error}=await sb.from("menu_items").update({is_available:value}).eq("id",id);
-    if(error){alert("Не вдалося змінити наявність: "+error.message);return}
-    await loadData();
-  }
+  async function deleteDish(id){
+  const dish=dishes.find(d=>d.id===id);
+  if(!dish)return;
+  if(!confirm(`Видалити страву «${dish.name}»? Цю дію не можна скасувати.`))return;
+  const {error}=await sb.from("menu_items").delete().eq("id",id);
+  if(error){alert("Не вдалося видалити страву: "+error.message);return}
+  await loadData();
+}
   sb.auth.onAuthStateChange(async()=>{await refreshSession()});
   loadData(); refreshSession();
 })();
