@@ -71,6 +71,32 @@
       <div class="row-actions"><button id="addDish" class="primary">+ Додати страву</button><button id="logout" class="secondary">Вийти</button></div>
     </div>
     <div id="adminList" class="admin-list"></div>
+    <div id="adminCalculator">
+  <h3>Калькулятор суммы</h3>
+  <div class="field">
+  <label>Выбрать блюдо</label>
+  <select id="calcDish">
+    <option value="">Выберите блюдо</option>
+  </select>
+</div>
+
+<div class="field">
+  <label>Количество</label>
+  <input id="calcQty" type="number" min="1" value="1">
+</div>
+
+<button type="button" class="primary" id="calcAdd">Добавить блюдо</button>
+
+<div class="field">
+  <label>Своя позиция</label>
+  <input id="calcName" placeholder="Название блюда">
+  <input id="calcPrice" type="number" min="0" step="0.01" placeholder="Цена, грн">
+  <input id="calcCustomQty" type="number" min="1" value="1" placeholder="Количество">
+</div>
+
+<button type="button" class="secondary" id="calcCustom">Добавить свою позицию</button><div id="calcList"></div>
+  <h3>Итого: <span id="calcTotal">0,00 грн</span></h3><button type="button" class="secondary" id="calcClear">Очистить расчёт</button>
+</div>
   </section>
   <nav id="categories" class="cats" aria-label="Категорії меню"></nav>
   <h2 id="sectionTitle" class="section-title">Наше меню</h2>
@@ -206,8 +232,59 @@ document.addEventListener("touchend", e => {
   $("adminList").querySelectorAll("[data-hide]").forEach(b=>b.addEventListener("click",()=>toggleAvailability(b.dataset.hide,false)));
   $("adminList").querySelectorAll("[data-delete]").forEach(b=>b.addEventListener("click",()=>deleteDish(b.dataset.delete)));
   $("menu").querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>openDishForm(b.dataset.edit)));
-}
-  function openDishForm(id){
+initCalculator();}
+  function initCalculator(){
+  const select=$("calcDish");
+  if(!select)return;
+
+  select.innerHTML='<option value="">Выберите блюдо</option>'+dishes.map(d=>`<option value="${esc(d.id)}">${esc(d.name)} — ${money(d.price)}</option>`).join("");
+
+  if(initCalculator.ready)return;
+  initCalculator.ready=true;
+  initCalculator.items=[];
+
+  function draw(){
+    $("calcList").innerHTML=initCalculator.items.map((item,i)=>`
+      <div class="admin-row">
+        <div>${esc(item.name)} × ${item.qty}<br>${money(item.price*item.qty)}</div>
+        <button type="button" class="edit-small" data-calc-remove="${i}">Удалить</button>
+      </div>
+    `).join("");
+
+    $("calcTotal").textContent=money(initCalculator.items.reduce((s,x)=>s+x.price*x.qty,0));
+    $("calcList").querySelectorAll("[data-calc-remove]").forEach(b=>b.onclick=()=>{
+      initCalculator.items.splice(Number(b.dataset.calcRemove),1);
+      draw();
+    });
+  }
+
+  $("calcClear").onclick=()=>{
+  initCalculator.items=[];
+  draw();
+};$("calcAdd").onclick=()=>{
+    const d=dishes.find(x=>x.id===select.value);
+    const qty=Math.max(1,Number($("calcQty").value)||1);
+    if(!d){alert("Выберите блюдо");return}
+    initCalculator.items.push({name:d.name,price:Number(d.price),qty});
+    draw();
+  };
+
+  $("calcCustom").onclick=()=>{
+    const name=$("calcName").value.trim();
+    const price=Number($("calcPrice").value);
+    const qty=Math.max(1,Number($("calcCustomQty").value)||1);
+    if(!name||!Number.isFinite(price)||price<0){
+      alert("Введите название и правильную цену");
+      return;
+    }
+    initCalculator.items.push({name,price,qty});
+    $("calcName").value="";
+    $("calcPrice").value="";
+    draw();
+  };
+
+  draw();
+}function openDishForm(id){
     const d=dishes.find(x=>x.id===id);
     $("dishModalTitle").textContent=d?"Редагувати страву":"Додати страву";
     $("dishId").value=d?.id||""; $("dishName").value=d?.name||"";
