@@ -465,7 +465,18 @@ $("calcPrint").onclick=printReceipt;
   if(error){alert("Не вдалося видалити страву: "+error.message);return}
   await loadData();
 }
-  sb.auth.onAuthStateChange(async()=>{await refreshSession()});
+ async function toggleAvailability(id,value){
+  const {error}=await sb.from("menu_items")
+    .update({is_available:value})
+    .eq("id",id);
+
+  if(error){
+    alert("Не вдалося змінити наявність: "+error.message);
+    return;
+  }
+
+  await loadData();
+} sb.auth.onAuthStateChange(async()=>{await refreshSession()});
   loadData(); refreshSession();
 })();
 document.addEventListener("click", function(e) {
