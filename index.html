@@ -127,6 +127,22 @@
   document.querySelectorAll(".closeModal").forEach(b=>b.addEventListener("click",hideModals));
   document.querySelectorAll(".modal-back").forEach(b=>b.addEventListener("click",e=>{if(e.target===b)hideModals()}));
 
+document.querySelectorAll(".modal-back").forEach(modal => {
+  let startY = 0;
+
+  modal.addEventListener("touchstart", e => {
+    startY = e.changedTouches[0].clientY;
+  }, { passive: true });
+
+  modal.addEventListener("touchend", e => {
+    const endY = e.changedTouches[0].clientY;
+    if (endY - startY > 100) {
+      hideModals();
+    }
+  }, { passive: true });
+});
+
+
   async function loadData(){
     $("menu").innerHTML = '<div class="status">Завантажуємо меню…</div>';
     const [cr,mr] = await Promise.all([
