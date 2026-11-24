@@ -45,6 +45,7 @@
     .field{display:grid;gap:6px;margin:12px 0}.field label{font-size:12px;color:var(--muted)}
     .field input,.field textarea,.field select{width:100%;background:#17130f;color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:11px;outline:none}
     .field textarea{min-height:70px;resize:vertical}.actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px}
+    .photo-preview{display:none;width:100%;max-height:190px;object-fit:cover;border:1px solid var(--line);border-radius:10px;background:#17130f}.photo-preview.show{display:block}.photo-help{font-size:11px;color:var(--muted);line-height:1.45}
     .admin-panel{display:none;background:#211b16;border:1px solid var(--gold);border-radius:15px;padding:16px;margin:14px 0}
     .admin-panel.show{display:block}.admin-head{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
     .admin-list{display:grid;gap:8px;margin-top:14px}.admin-row{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid var(--line);padding:10px 0}
@@ -99,7 +100,8 @@
       <div class="field"><label for="dishCategory">Категорія</label><select id="dishCategory" required></select></div>
       <div class="field"><label for="dishPrice">Ціна, грн</label><input id="dishPrice" type="number" min="0" step="0.01" required></div>
       <div class="field"><label for="dishDescription">Опис / вага</label><input id="dishDescription" maxlength="160" placeholder="Наприклад: Ціна за 100 г"></div>
-      <div class="field"><label for="dishImage">Посилання на фото (необов'язково)</label><input id="dishImage" type="url" placeholder="https://…"></div>
+      <div class="field"><label for="dishImageFile">Фотографія страви</label><input id="dishImageFile" type="file" accept="image/jpeg,image/png,image/webp"><div class="photo-help">Оберіть фото з телефона або комп’ютера. JPG, PNG або WebP, до 5 МБ. Якщо фото не вибирати, попереднє зображення залишиться.</div><img id="dishImagePreview" class="photo-preview" alt="Попередній перегляд фото"></div>
+      <input id="dishCurrentImage" type="hidden">
       <div class="field"><label><input id="dishAvailable" type="checkbox" checked style="width:auto"> Є в наявності</label></div>
       <div id="dishError" class="intro" style="color:#ffb6a8"></div>
       <div class="actions"><button type="button" class="secondary closeModal">Скасувати</button><button class="primary" type="submit">Зберегти</button></div>
@@ -179,7 +181,9 @@
     $("dishModalTitle").textContent=d?"Редагувати страву":"Додати страву";
     $("dishId").value=d?.id||""; $("dishName").value=d?.name||"";
     $("dishPrice").value=d?.price??""; $("dishDescription").value=d?.description||"";
-    $("dishImage").value=d?.image_url||""; $("dishAvailable").checked=d?.is_available??true;
+    $("dishCurrentImage").value=d?.image_url||""; $("dishImageFile").value="";
+    const preview=$("dishImagePreview"); preview.src=d?.image_url||""; preview.classList.toggle("show",!!d?.image_url);
+    $("dishAvailable").checked=d?.is_available??true;
     $("dishCategory").innerHTML=categories.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join("");
     if(d)$("dishCategory").value=d.category_id;
     $("dishError").textContent=""; showModal("dishModal");
@@ -202,11 +206,36 @@
   });
   $("logout").addEventListener("click",async()=>{await sb.auth.signOut();isAdmin=false;renderAdmin();renderMenu()});
   $("addDish").addEventListener("click",()=>openDishForm(""));
+  $("dishImageFile").addEventListener("change",()=>{
+    const file=$("dishImageFile").files[0], preview=$("dishImagePreview");
+    if(!file){preview.src=$("dishCurrentImage").value||"";preview.classList.toggle("show",!!preview.src);return}
+    if(!["image/jpeg","image/png","image/webp"].includes(file.type) || file.size>5*1024*1024){
+      $("dishError").textContent="Оберіть JPG, PNG або WebP до 5 МБ.";
+      $("dishImageFile").value=""; return;
+    }
+    $("dishError").textContent="";
+    preview.src=URL.createObjectURL(file); preview.classList.add("show");
+  });
+  async function uploadDishPhoto(file){
+    const ext=({ "image/jpeg":"jpg", "image/png":"png", "image/webp":"webp" })[file.type];
+    if(!ext) throw new Error("Підтримуються лише JPG, PNG та WebP.");
+    if(file.size>5*1024*1024) throw new Error("Фото має бути не більше 5 МБ.");
+    const path=`${crypto.randomUUID()}.${ext}`;
+    const {error}=await sb.storage.from("menu-photos").upload(path,file,{cacheControl:"3600",upsert:false,contentType:file.type});
+    if(error) throw error;
+    const {data}=sb.storage.from("menu-photos").getPublicUrl(path);
+    return data.publicUrl;
+  }
   $("dishForm").addEventListener("submit",async e=>{
     e.preventDefault(); $("dishError").textContent="Зберігаємо…";
     const id=$("dishId").value;
+    let imageUrl=$("dishCurrentImage").value||null;
+    const file=$("dishImageFile").files[0];
+    try{
+      if(file){$("dishError").textContent="Завантажуємо фото…";imageUrl=await uploadDishPhoto(file);}
+    }catch(error){$("dishError").textContent="Не вдалося завантажити фото: "+error.message;return}
     const row={name:$("dishName").value.trim(),category_id:$("dishCategory").value,price:Number($("dishPrice").value),
-      description:$("dishDescription").value.trim()||null,image_url:$("dishImage").value.trim()||null,is_available:$("dishAvailable").checked};
+      description:$("dishDescription").value.trim()||null,image_url:imageUrl,is_available:$("dishAvailable").checked};
     const result=id?await sb.from("menu_items").update(row).eq("id",id):await sb.from("menu_items").insert(row);
     if(result.error){$("dishError").textContent=result.error.message;return}
     hideModals(); await loadData();
