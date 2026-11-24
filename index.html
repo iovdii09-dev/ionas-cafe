@@ -99,7 +99,10 @@
   <label>Своя позиция</label>
   <input id="calcName" placeholder="Название блюда">
   <input id="calcPrice" type="number" min="0" step="0.01" placeholder="Цена, грн">
-  <input id="calcCustomQty" type="number" min="1" value="1" placeholder="Количество">
+ <select id="calcCustomUnit">
+  <option value="шт">Штуки</option>
+  <option value="г">Граммы</option>
+</select><input id="calcCustomQty" type="number" min="1" value="1" placeholder="Количество">
 </div>
 
 <button type="button" class="secondary" id="calcCustom">Добавить свою позицию</button><div id="calcList"></div>
@@ -301,7 +304,7 @@ initCalculator();}
   const name=$("calcName").value.trim();
   const price=Number($("calcPrice").value);
   const qty=Number($("calcCustomQty").value);
-  const unit=$("calcUnit").value;
+ const unit=$("calcCustomUnit").value;
 
   if(!name||!Number.isFinite(price)||price<0||!Number.isFinite(qty)||qty<=0){
     alert("Проверьте название, цену и количество");
