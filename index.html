@@ -127,20 +127,25 @@
   document.querySelectorAll(".closeModal").forEach(b=>b.addEventListener("click",hideModals));
   document.querySelectorAll(".modal-back").forEach(b=>b.addEventListener("click",e=>{if(e.target===b)hideModals()}));
 
-document.querySelectorAll(".modal-back").forEach(modal => {
+
+const dishCard = document.querySelector("#dishModal .modal");
+
+if (dishCard) {
   let startY = 0;
 
-  modal.addEventListener("touchstart", e => {
-    startY = e.changedTouches[0].clientY;
+  dishCard.addEventListener("touchstart", e => {
+    startY = e.touches[0].clientY;
   }, { passive: true });
 
-  modal.addEventListener("touchend", e => {
+  dishCard.addEventListener("touchend", e => {
     const endY = e.changedTouches[0].clientY;
-    if (endY - startY > 100) {
+
+    if (endY - startY > 90) {
       hideModals();
     }
   }, { passive: true });
-});
+}
+
 
 
   async function loadData(){
