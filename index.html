@@ -234,19 +234,86 @@ document.addEventListener("touchend", e => {
     $("menu").querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>openDishForm(b.dataset.edit)));
   }
 
-  function renderAdmin(){
+ 
+function renderAdmin(){
   $("adminPanel").classList.toggle("show",isAdmin);
   $("adminOpen").style.display=isAdmin?"none":"inline-block";
   if(!isAdmin)return;
 
-  $("adminList").innerHTML=dishes.map(d=>`<div class="admin-row"><div><strong>${esc(d.name)}</strong><br><small>${money(d.price)} · ${esc(categories.find(c=>c.id===d.category_id)?.name||"")}</small></div><div class="row-actions"><button class="edit-small" data-edit="${esc(d.id)}">Змінити</button><button class="edit-small" data-availability="${esc(d.id)}" data-value="${d.is_available ? "false" : "true"}">${d.is_available ? "Приховати" : "Показати"}</button><button class="edit-small" data-delete="${esc(d.id)}">Видалити</button></div></div>`).join("") || '<div class="intro">Поки немає доступних страв.</div>';
+  $("adminList").innerHTML=dishes.map((d,i)=>`
+    <div class="admin-row">
+      <div>
+        <strong>${esc(d.name)}</strong><br>
+        <small>${money(d.price)} · ${esc(categories.find(c=>c.id===d.category_id)?.name||"")}</small>
+      </div>
+      <div class="row-actions">
+        <button class="edit-small" data-move-up="${esc(d.id)}" ${i===0?"disabled":""}>↑</button>
+        <button class="edit-small" data-move-down="${esc(d.id)}" ${i===dishes.length-1?"disabled":""}>↓</button>
+        <button class="edit-small" data-edit="${esc(d.id)}">Змінити</button>
+        <button class="edit-small" data-availability="${esc(d.id)}" data-value="${d.is_available?"false":"true"}">${d.is_available?"Приховати":"Показати"}</button>
+        <button class="edit-small" data-delete="${esc(d.id)}">Видалити</button>
+      </div>
+    </div>
+  `).join("") || '<div class="intro">Поки немає страв.</div>';
 
-  $("adminList").querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>openDishForm(b.dataset.edit)));
-  $("adminList").querySelectorAll("[data-availability]").forEach(b=>b.addEventListener("click",()=>toggleAvailability(b.dataset.availability,b.dataset.value==="true")));
-  $("adminList").querySelectorAll("[data-delete]").forEach(b=>b.addEventListener("click",()=>deleteDish(b.dataset.delete)));
-  $("menu").querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>openDishForm(b.dataset.edit)));
-initCalculator();}
-  function initCalculator(){
+  $("adminList").querySelectorAll("[data-edit]").forEach(b=>
+    b.addEventListener("click",()=>openDishForm(b.dataset.edit))
+  );
+
+  $("adminList").querySelectorAll("[data-availability]").forEach(b=>
+    b.addEventListener("click",()=>toggleAvailability(b.dataset.availability,b.dataset.value==="true"))
+  );
+
+  $("adminList").querySelectorAll("[data-delete]").forEach(b=>
+    b.addEventListener("click",()=>deleteDish(b.dataset.delete))
+  );
+
+  $("adminList").querySelectorAll("[data-move-up]").forEach(b=>
+    b.addEventListener("click",()=>moveDish(b.dataset.moveUp,-1))
+  );
+
+  $("adminList").querySelectorAll("[data-move-down]").forEach(b=>
+    b.addEventListener("click",()=>moveDish(b.dataset.moveDown,1))
+  );
+
+  $("menu").querySelectorAll("[data-edit]").forEach(b=>
+    b.addEventListener("click",()=>openDishForm(b.dataset.edit))
+  );
+
+  initCalculator();
+}
+
+ 
+async function moveDish(id,direction){
+  const ordered=[...dishes];
+
+  const index=ordered.findIndex(d=>d.id===id);
+  const next=index+direction;
+
+  if(index<0 || next<0 || next>=ordered.length)return;
+
+  [ordered[index],ordered[next]]=
+  [ordered[next],ordered[index]];
+
+  const results=await Promise.all(
+    ordered.map((d,i)=>
+      sb.from("menu_items")
+        .update({sort_order:(i+1)*10})
+        .eq("id",d.id)
+    )
+  );
+
+  const failed=results.find(r=>r.error);
+
+  if(failed){
+    alert("Помилка зміни порядку: "+failed.error.message);
+    await loadData();
+    return;
+  }
+
+  await loadData();
+}
+ function initCalculator(){
   const select=$("calcDish");
   if(!select)return;
 
