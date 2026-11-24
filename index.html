@@ -199,7 +199,7 @@ document.addEventListener("touchend", e => {
     $("menu").innerHTML = '<div class="status">Завантажуємо меню…</div>';
     const [cr,mr] = await Promise.all([
       sb.from("categories").select("id,name,sort_order").order("sort_order"),
-      sb.from("menu_items").select("id,category_id,name,description,price,image_url,is_available,sort_order").eq("is_available",true).order("sort_order")
+      sb.from("menu_items").select("id,category_id,name,description,price,image_url,is_available,sort_order").order("sort_order")
     ]);
     if(cr.error || mr.error){
       $("menu").innerHTML = `<div class="status">Не вдалося завантажити меню. ${esc(cr.error?.message || mr.error?.message || "Перевірте налаштування доступу.")}</div>`;
@@ -218,7 +218,7 @@ document.addEventListener("touchend", e => {
 
   function renderMenu(){
     const q=$("search").value.trim().toLocaleLowerCase("uk");
-    const filtered=dishes.filter(d=>(activeCategory==="all"||d.category_id===activeCategory) &&
+    const filtered=dishes.filter(d=>d.is_available && (activeCategory==="all"||d.category_id===activeCategory) &&
       (d.name.toLocaleLowerCase("uk").includes(q)||(d.description||"").toLocaleLowerCase("uk").includes(q)));
     const cat=categories.find(c=>c.id===activeCategory);
     $("sectionTitle").textContent=cat?cat.name:"Наше меню";
@@ -239,10 +239,10 @@ document.addEventListener("touchend", e => {
   $("adminOpen").style.display=isAdmin?"none":"inline-block";
   if(!isAdmin)return;
 
-  $("adminList").innerHTML=dishes.map(d=>`<div class="admin-row"><div><strong>${esc(d.name)}</strong><br><small>${money(d.price)} · ${esc(categories.find(c=>c.id===d.category_id)?.name||"")}</small></div><div class="row-actions"><button class="edit-small" data-edit="${esc(d.id)}">Змінити</button><button class="edit-small" data-hide="${esc(d.id)}">Приховати</button><button class="edit-small" data-delete="${esc(d.id)}">Видалити</button></div></div>`).join("") || '<div class="intro">Поки немає доступних страв.</div>';
+  $("adminList").innerHTML=dishes.map(d=>`<div class="admin-row"><div><strong>${esc(d.name)}</strong><br><small>${money(d.price)} · ${esc(categories.find(c=>c.id===d.category_id)?.name||"")}</small></div><div class="row-actions"><button class="edit-small" data-edit="${esc(d.id)}">Змінити</button><button class="edit-small" data-availability="${esc(d.id)}" data-value="${d.is_available ? "false" : "true"}">${d.is_available ? "Приховати" : "Показати"}</button><button class="edit-small" data-delete="${esc(d.id)}">Видалити</button></div></div>`).join("") || '<div class="intro">Поки немає доступних страв.</div>';
 
   $("adminList").querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>openDishForm(b.dataset.edit)));
-  $("adminList").querySelectorAll("[data-hide]").forEach(b=>b.addEventListener("click",()=>toggleAvailability(b.dataset.hide,false)));
+  $("adminList").querySelectorAll("[data-availability]").forEach(b=>b.addEventListener("click",()=>toggleAvailability(b.dataset.availability,b.dataset.value==="true")));
   $("adminList").querySelectorAll("[data-delete]").forEach(b=>b.addEventListener("click",()=>deleteDish(b.dataset.delete)));
   $("menu").querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>openDishForm(b.dataset.edit)));
 initCalculator();}
