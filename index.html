@@ -128,23 +128,31 @@
   document.querySelectorAll(".modal-back").forEach(b=>b.addEventListener("click",e=>{if(e.target===b)hideModals()}));
 
 
-const dishCard = document.querySelector("#dishModal .modal");
 
-if (dishCard) {
-  let startY = 0;
+let dishSwipeStartY = 0;
+let dishSwipeStartX = 0;
 
-  dishCard.addEventListener("touchstart", e => {
-    startY = e.touches[0].clientY;
-  }, { passive: true });
+document.addEventListener("touchstart", e => {
+  if (e.target.closest("#dishModal .modal")) {
+    dishSwipeStartY = e.touches[0].clientY;
+    dishSwipeStartX = e.touches[0].clientX;
+  }
+}, { passive: true });
 
-  dishCard.addEventListener("touchend", e => {
-    const endY = e.changedTouches[0].clientY;
+document.addEventListener("touchend", e => {
+  if (!dishSwipeStartY) return;
 
-    if (endY - startY > 90) {
-      hideModals();
-    }
-  }, { passive: true });
-}
+  const deltaY = e.changedTouches[0].clientY - dishSwipeStartY;
+  const deltaX = Math.abs(e.changedTouches[0].clientX - dishSwipeStartX);
+
+  if (deltaY > 80 && deltaY > deltaX * 1.3) {
+    hideModals();
+  }
+
+  dishSwipeStartY = 0;
+  dishSwipeStartX = 0;
+}, { passive: true });
+
 
 
 
