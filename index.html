@@ -81,8 +81,16 @@
 </div>
 
 <div class="field">
-  <label>Количество</label>
-  <input id="calcQty" type="number" min="1" value="1">
+  <label>Единица измерения</label>
+  <select id="calcUnit">
+    <option value="шт">Штуки</option>
+    <option value="г">Граммы</option>
+  </select>
+</div>
+
+<div class="field">
+  <label>Количество / вес</label>
+  <input id="calcQty" type="number" min="0.01" step="0.01" value="1">
 </div>
 
 <button type="button" class="primary" id="calcAdd">Добавить блюдо</button>
@@ -243,45 +251,75 @@ initCalculator();}
   initCalculator.ready=true;
   initCalculator.items=[];
 
-  function draw(){
-    $("calcList").innerHTML=initCalculator.items.map((item,i)=>`
+ function draw(){
+  $("calcList").innerHTML=initCalculator.items.map((item,i)=>{
+    const sum=item.price*item.qty*(item.unit==="г"?1/1000:1);
+    const unit=item.unit||"шт";
+    return `
       <div class="admin-row">
-        <div>${esc(item.name)} × ${item.qty}<br>${money(item.price*item.qty)}</div>
+        <div>
+          ${esc(item.name)} × ${item.qty} ${unit}
+          <br>${money(sum)}
+        </div>
         <button type="button" class="edit-small" data-calc-remove="${i}">Удалить</button>
       </div>
-    `).join("");
+    `;
+  }).join("");
 
-    $("calcTotal").textContent=money(initCalculator.items.reduce((s,x)=>s+x.price*x.qty,0));
-    $("calcList").querySelectorAll("[data-calc-remove]").forEach(b=>b.onclick=()=>{
-      initCalculator.items.splice(Number(b.dataset.calcRemove),1);
-      draw();
-    });
+  const total=initCalculator.items.reduce((s,x)=>
+    s+x.price*x.qty*(x.unit==="г"?1/1000:1),0);
+
+  $("calcTotal").textContent=money(total);
+
+  $("calcList").querySelectorAll("[data-calc-remove]").forEach(b=>b.onclick=()=>{
+    initCalculator.items.splice(Number(b.dataset.calcRemove),1);
+    draw();
+  });
+}
   }
 
   $("calcClear").onclick=()=>{
   initCalculator.items=[];
   draw();
 };$("calcAdd").onclick=()=>{
-    const d=dishes.find(x=>x.id===select.value);
-    const qty=Math.max(1,Number($("calcQty").value)||1);
-    if(!d){alert("Выберите блюдо");return}
-    initCalculator.items.push({name:d.name,price:Number(d.price),qty});
-    draw();
-  };
+  const d=dishes.find(x=>x.id===select.value);
+  const qty=Number($("calcQty").value);
+  const unit=$("calcUnit").value;
+  if(!d||!Number.isFinite(qty)||qty<=0){
+    alert("Выберите блюдо и укажите количество");
+    return;
+  }
+  initCalculator.items.push({
+    name:d.name,
+    price:Number(d.price),
+    qty,
+    unit
+  });
+  draw();
+};
 
   $("calcCustom").onclick=()=>{
-    const name=$("calcName").value.trim();
-    const price=Number($("calcPrice").value);
-    const qty=Math.max(1,Number($("calcCustomQty").value)||1);
-    if(!name||!Number.isFinite(price)||price<0){
-      alert("Введите название и правильную цену");
-      return;
-    }
-    initCalculator.items.push({name,price,qty});
-    $("calcName").value="";
-    $("calcPrice").value="";
-    draw();
-  };
+  const name=$("calcName").value.trim();
+  const price=Number($("calcPrice").value);
+  const qty=Number($("calcCustomQty").value);
+  const unit=$("calcUnit").value;
+
+  if(!name||!Number.isFinite(price)||price<0||!Number.isFinite(qty)||qty<=0){
+    alert("Проверьте название, цену и количество");
+    return;
+  }
+
+  initCalculator.items.push({
+    name,
+    price,
+    qty,
+    unit
+  });
+
+  $("calcName").value="";
+  $("calcPrice").value="";
+  draw();
+};
 
   draw();
 }function openDishForm(id){
