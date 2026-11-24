@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#211b16">
+  <title>Ionaș Cafe — Меню</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root{--bg:#17130f;--panel:#211b16;--panel2:#2b231c;--ink:#f4ecdf;--muted:#b9aa97;--gold:#c49a61;--line:#493a2c;--green:#75836a}
+    *{box-sizing:border-box} body{margin:0;background:radial-gradient(ellipse at 50% -10%,#51402e 0,#211a14 42%,var(--bg) 78%);color:var(--ink);font-family:"DM Sans",sans-serif;min-height:100vh}
+    button,input,textarea,select{font:inherit} button{cursor:pointer}
+    .wrap{max-width:1050px;margin:auto;padding:22px 18px 70px}
+    header{text-align:center;padding:34px 12px 24px;border-bottom:1px solid var(--line)}
+    .eyebrow{letter-spacing:.28em;text-transform:uppercase;color:var(--gold);font-size:11px}
+    h1{font:600 clamp(42px,9vw,76px)/1.05 "Playfair Display",serif;margin:10px 0 3px;letter-spacing:.01em}
+    .script{font:italic 24px "Playfair Display",serif;color:var(--gold)}
+    .intro{color:var(--muted);font-size:14px;margin:15px 0 0}
+    .toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;margin:22px 0 16px;flex-wrap:wrap}
+    .search{flex:1;min-width:190px;background:#211b16;border:1px solid var(--line);border-radius:999px;padding:12px 16px;color:var(--ink);outline:none}
+    .admin-btn,.primary,.secondary,.danger{border:1px solid var(--line);border-radius:999px;padding:10px 15px;color:var(--ink);background:var(--panel2)}
+    .admin-btn{color:var(--gold)} .primary{background:var(--gold);border-color:var(--gold);color:#21170e;font-weight:700}
+    .secondary{background:transparent}.danger{border-color:#8b5146;color:#ffb6a8;background:transparent}
+    .cats{display:flex;gap:8px;overflow:auto;padding:4px 0 16px;scrollbar-width:thin}
+    .cat{white-space:nowrap;border:1px solid var(--line);background:#211b16;color:var(--muted);border-radius:999px;padding:9px 15px}
+    .cat.active{background:var(--gold);color:#21170e;border-color:var(--gold);font-weight:700}
+    .section-title{font:600 27px "Playfair Display",serif;margin:22px 0 14px;color:#f4e5d0}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+    .dish{background:linear-gradient(145deg,#2b231c,#201a15);border:1px solid var(--line);border-radius:15px;overflow:hidden;display:flex;min-height:108px}
+    .dish img{width:112px;object-fit:cover;background:#382d22}
+    .dish-body{padding:14px;display:flex;flex-direction:column;flex:1;min-width:0}
+    .dish-name{font:600 18px "Playfair Display",serif}
+    .dish-desc{color:var(--muted);font-size:12px;margin-top:5px;line-height:1.4}
+    .dish-bottom{display:flex;align-items:end;justify-content:space-between;gap:8px;margin-top:auto;padding-top:12px}
+    .price{color:var(--gold);font-weight:700;font-size:17px;white-space:nowrap}
+    .edit-small{font-size:11px;color:var(--muted);border:1px solid var(--line);background:transparent;border-radius:20px;padding:5px 8px}
+    .empty,.status{color:var(--muted);text-align:center;padding:30px 10px}
+    footer{text-align:center;color:#8f806e;font-size:12px;padding:38px 10px 0}
+    .modal-back{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;padding:16px;z-index:10}
+    .modal-back.show{display:flex}.modal{width:min(480px,100%);max-height:90vh;overflow:auto;background:#211b16;border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 20px 70px #0009}
+    .modal h2{font:600 25px "Playfair Display",serif;margin:0 0 16px}
+    .field{display:grid;gap:6px;margin:12px 0}.field label{font-size:12px;color:var(--muted)}
+    .field input,.field textarea,.field select{width:100%;background:#17130f;color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:11px;outline:none}
+    .field textarea{min-height:70px;resize:vertical}.actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px}
+    .admin-panel{display:none;background:#211b16;border:1px solid var(--gold);border-radius:15px;padding:16px;margin:14px 0}
+    .admin-panel.show{display:block}.admin-head{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+    .admin-list{display:grid;gap:8px;margin-top:14px}.admin-row{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid var(--line);padding:10px 0}
+    .admin-row small{color:var(--muted)} .row-actions{display:flex;gap:6px;flex-wrap:wrap}
+    @media(max-width:620px){.grid{grid-template-columns:1fr}.dish img{width:104px}.wrap{padding:12px 13px 50px}header{padding-top:28px}.toolbar{margin-top:16px}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Sauna • Cafe • Zakarpattia</div>
+    <h1>Ionașh</h1>
+    <div class="script">Cafe</div>
+    <p class="intro">Смак гостинності та затишку</p>
+  </header>
+  <div class="toolbar">
+    <input id="search" class="search" type="search" placeholder="Пошук страви…">
+    <button id="adminOpen" class="admin-btn">Вхід адміністратора</button>
+  </div>
+  <section id="adminPanel" class="admin-panel">
+    <div class="admin-head">
+      <div><strong>Панель керування</strong><div class="intro" style="margin:4px 0 0">Увійшли як адміністратор</div></div>
+      <div class="row-actions"><button id="addDish" class="primary">+ Додати страву</button><button id="logout" class="secondary">Вийти</button></div>
+    </div>
+    <div id="adminList" class="admin-list"></div>
+  </section>
+  <nav id="categories" class="cats" aria-label="Категорії меню"></nav>
+  <h2 id="sectionTitle" class="section-title">Наше меню</h2>
+  <main id="menu" class="grid"><div class="status">Завантажуємо меню…</div></main>
+  <footer>Ionaș Cafe · Нижня Апша · Ціни вказані у гривнях</footer>
+</div>
+
+<div id="loginModal" class="modal-back">
+  <div class="modal">
+    <h2>Вхід адміністратора</h2>
+    <p class="intro">Увійдіть за email та паролем адміністратора.</p>
+    <form id="loginForm">
+      <div class="field"><label for="email">Email</label><input id="email" type="email" required autocomplete="username" value="iovdii09@gmail.com"></div>
+      <div class="field"><label for="password">Пароль</label><input id="password" type="password" required autocomplete="current-password"></div>
+      <div id="loginError" class="intro" style="color:#ffb6a8"></div>
+      <div class="actions"><button type="button" class="secondary closeModal">Скасувати</button><button class="primary" type="submit">Увійти</button></div>
+    </form>
+  </div>
+</div>
+
+<div id="dishModal" class="modal-back">
+  <div class="modal">
+    <h2 id="dishModalTitle">Додати страву</h2>
+    <form id="dishForm">
+      <input id="dishId" type="hidden">
+      <div class="field"><label for="dishName">Назва</label><input id="dishName" required maxlength="100"></div>
+      <div class="field"><label for="dishCategory">Категорія</label><select id="dishCategory" required></select></div>
+      <div class="field"><label for="dishPrice">Ціна, грн</label><input id="dishPrice" type="number" min="0" step="0.01" required></div>
+      <div class="field"><label for="dishDescription">Опис / вага</label><input id="dishDescription" maxlength="160" placeholder="Наприклад: Ціна за 100 г"></div>
+      <div class="field"><label for="dishImage">Посилання на фото (необов'язково)</label><input id="dishImage" type="url" placeholder="https://…"></div>
+      <div class="field"><label><input id="dishAvailable" type="checkbox" checked style="width:auto"> Є в наявності</label></div>
+      <div id="dishError" class="intro" style="color:#ffb6a8"></div>
+      <div class="actions"><button type="button" class="secondary closeModal">Скасувати</button><button class="primary" type="submit">Зберегти</button></div>
+    </form>
+  </div>
+</div>
+
+<script>
+(() => {
+  const SUPABASE_URL = "https://bgthzsbtraepgqydtghm.supabase.co";
+  const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_v567cv_62Ht34KVAv942qw_TWeos7ia";
+  const ADMIN_EMAIL = "iovdii09@gmail.com";
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+  let categories = [], dishes = [], activeCategory = "all", isAdmin = false;
+
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const money = n => `${Number(n).toLocaleString("uk-UA")} ₴`;
+  const placeholder = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="240" height="180"><rect width="100%" height="100%" fill="#382d22"/><text x="50%" y="52%" fill="#c49a61" font-size="16" text-anchor="middle" font-family="serif">Ionaș Cafe</text></svg>');
+
+  function showModal(id){$(id).classList.add("show")}
+  function hideModals(){document.querySelectorAll(".modal-back").forEach(x=>x.classList.remove("show"))}
+  document.querySelectorAll(".closeModal").forEach(b=>b.addEventListener("click",hideModals));
+  document.querySelectorAll(".modal-back").forEach(b=>b.addEventListener("click",e=>{if(e.target===b)hideModals()}));
+
+  async function loadData(){
+    $("menu").innerHTML = '<div class="status">Завантажуємо меню…</div>';
+    const [cr,mr] = await Promise.all([
+      sb.from("categories").select("id,name,sort_order").order("sort_order"),
+      sb.from("menu_items").select("id,category_id,name,description,price,image_url,is_available,sort_order").eq("is_available",true).order("sort_order")
+    ]);
+    if(cr.error || mr.error){
+      $("menu").innerHTML = `<div class="status">Не вдалося завантажити меню. ${esc(cr.error?.message || mr.error?.message || "Перевірте налаштування доступу.")}</div>`;
+      return;
+    }
+    categories=cr.data||[]; dishes=mr.data||[];
+    renderCategories(); renderMenu(); renderAdmin();
+  }
+
+  function renderCategories(){
+    const visibleCats = categories.filter(c=>dishes.some(d=>d.category_id===c.id));
+    $("categories").innerHTML = `<button class="cat ${activeCategory==="all"?"active":""}" data-cat="all">Усі страви</button>` +
+      visibleCats.map(c=>`<button class="cat ${activeCategory===c.id?"active":""}" data-cat="${esc(c.id)}">${esc(c.name)}</button>`).join("");
+    $("categories").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{activeCategory=b.dataset.cat;renderCategories();renderMenu()}));
+  }
+
+  function renderMenu(){
+    const q=$("search").value.trim().toLocaleLowerCase("uk");
+    const filtered=dishes.filter(d=>(activeCategory==="all"||d.category_id===activeCategory) &&
+      (d.name.toLocaleLowerCase("uk").includes(q)||(d.description||"").toLocaleLowerCase("uk").includes(q)));
+    const cat=categories.find(c=>c.id===activeCategory);
+    $("sectionTitle").textContent=cat?cat.name:"Наше меню";
+    if(!filtered.length){$("menu").innerHTML='<div class="empty">У цій категорії поки немає страв.</div>';return}
+    $("menu").innerHTML=filtered.map(d=>`
+      <article class="dish">
+        <img src="${esc(d.image_url||placeholder)}" alt="${esc(d.name)}" loading="lazy" onerror="this.src='${placeholder}'">
+        <div class="dish-body"><div class="dish-name">${esc(d.name)}</div>
+          ${d.description?`<div class="dish-desc">${esc(d.description)}</div>`:""}
+          <div class="dish-bottom"><span class="price">${money(d.price)}</span>${isAdmin?`<button class="edit-small" data-edit="${esc(d.id)}">Редагувати</button>`:""}</div>
+        </div>
+      </article>`).join("");
+    $("menu").querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>openDishForm(b.dataset.edit)));
+  }
+
+  function renderAdmin(){
+    $("adminPanel").classList.toggle("show",isAdmin);
+    $("adminOpen").style.display=isAdmin?"none":"inline-block";
+    if(!isAdmin)return;
+    $("adminList").innerHTML=dishes.map(d=>`<div class="admin-row"><div><strong>${esc(d.name)}</strong><br><small>${money(d.price)} · ${esc(categories.find(c=>c.id===d.category_id)?.name||"")}</small></div><div class="row-actions"><button class="edit-small" data-edit="${esc(d.id)}">Змінити</button><button class="edit-small" data-hide="${esc(d.id)}">Приховати</button></div></div>`).join("") || '<div class="intro">Поки немає доступних страв.</div>';
+    $("adminList").querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>openDishForm(b.dataset.edit)));
+    $("adminList").querySelectorAll("[data-hide]").forEach(b=>b.addEventListener("click",()=>toggleAvailability(b.dataset.hide,false)));
+    $("menu").querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>openDishForm(b.dataset.edit)));
+  }
+
+  function openDishForm(id){
+    const d=dishes.find(x=>x.id===id);
+    $("dishModalTitle").textContent=d?"Редагувати страву":"Додати страву";
+    $("dishId").value=d?.id||""; $("dishName").value=d?.name||"";
+    $("dishPrice").value=d?.price??""; $("dishDescription").value=d?.description||"";
+    $("dishImage").value=d?.image_url||""; $("dishAvailable").checked=d?.is_available??true;
+    $("dishCategory").innerHTML=categories.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join("");
+    if(d)$("dishCategory").value=d.category_id;
+    $("dishError").textContent=""; showModal("dishModal");
+  }
+
+  async function refreshSession(){
+    const {data:{session}}=await sb.auth.getSession();
+    isAdmin=!!session && session.user.email?.toLowerCase()===ADMIN_EMAIL;
+    renderAdmin(); renderMenu();
+  }
+
+  $("search").addEventListener("input",renderMenu);
+  $("adminOpen").addEventListener("click",()=>{ $("loginError").textContent=""; showModal("loginModal") });
+  $("loginForm").addEventListener("submit",async e=>{
+    e.preventDefault(); $("loginError").textContent="Перевіряємо вхід…";
+    const {data,error}=await sb.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});
+    if(error){$("loginError").textContent=error.message;return}
+    if(data.user.email?.toLowerCase()!==ADMIN_EMAIL){await sb.auth.signOut();$("loginError").textContent="Цей акаунт не має прав адміністратора.";return}
+    $("password").value=""; hideModals(); await refreshSession(); await loadData();
+  });
+  $("logout").addEventListener("click",async()=>{await sb.auth.signOut();isAdmin=false;renderAdmin();renderMenu()});
+  $("addDish").addEventListener("click",()=>openDishForm(""));
+  $("dishForm").addEventListener("submit",async e=>{
+    e.preventDefault(); $("dishError").textContent="Зберігаємо…";
+    const id=$("dishId").value;
+    const row={name:$("dishName").value.trim(),category_id:$("dishCategory").value,price:Number($("dishPrice").value),
+      description:$("dishDescription").value.trim()||null,image_url:$("dishImage").value.trim()||null,is_available:$("dishAvailable").checked};
+    const result=id?await sb.from("menu_items").update(row).eq("id",id):await sb.from("menu_items").insert(row);
+    if(result.error){$("dishError").textContent=result.error.message;return}
+    hideModals(); await loadData();
+  });
+  async function toggleAvailability(id,value){
+    const {error}=await sb.from("menu_items").update({is_available:value}).eq("id",id);
+    if(error){alert("Не вдалося змінити наявність: "+error.message);return}
+    await loadData();
+  }
+  sb.auth.onAuthStateChange(async()=>{await refreshSession()});
+  loadData(); refreshSession();
+})();
+</script>
+</body>
+</html>
