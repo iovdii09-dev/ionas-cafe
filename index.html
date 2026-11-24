@@ -97,7 +97,7 @@
 
 <div class="field">
   <label>Своя позиция</label>
-  <input id="calcName" placeholder="Название блюда">
+  <input id="calcName" placeholder="Название блюда" autocomplete="off" autocorrect="off" spellcheck="false">
   <input id="calcPrice" type="number" min="0" step="0.01" placeholder="Цена, грн">
  <select id="calcCustomUnit">
   <option value="шт">Штуки</option>
@@ -107,6 +107,8 @@
 
 <button type="button" class="secondary" id="calcCustom">Добавить свою позицию</button><div id="calcList"></div>
   <h3>Итого: <span id="calcTotal">0,00 грн</span></h3><button type="button" class="secondary" id="calcClear">Очистить расчёт</button>
+      <button type="button" class="secondary" id="calcPdf">Сохранить чек PDF</button>
+<button type="button" class="secondary" id="calcPrint">Распечатать чек</button>
 </div>
   </section>
   <nav id="categories" class="cats" aria-label="Категорії меню"></nav>
@@ -324,7 +326,74 @@ initCalculator();}
 };
 
   draw();
-}function openDishForm(id){
+}function printReceipt(){
+  const items=initCalculator.items;
+  if(!items.length){
+    alert("Сначала добавьте блюда в расчёт");
+    return;
+  }
+
+  const total=items.reduce((s,x)=>
+    s+x.price*x.qty*(x.unit==="г"?1/1000:1),0
+  );
+
+  const date=new Date().toLocaleString("uk-UA");
+
+  const rows=items.map(x=>{
+    const sum=x.price*x.qty*(x.unit==="г"?1/1000:1);
+    return `<tr>
+      <td>${x.name}</td>
+      <td>${x.qty} ${x.unit||"шт"}</td>
+      <td>${x.price.toFixed(2)} грн</td>
+      <td>${sum.toFixed(2)} грн</td>
+    </tr>`;
+  }).join("");
+
+  const w=window.open("","_blank");
+  if(!w){
+    alert("Разрешите всплывающие окна для сайта");
+    return;
+  }
+
+  w.document.write(`
+    <!DOCTYPE html>
+    <html lang="uk">
+    <head>
+      <meta charset="UTF-8">
+      <title>Чек Sauna la Ionaș</title>
+      <style>
+        body{font-family:Arial,sans-serif;padding:15px;color:#000}
+        h2{text-align:center}
+        table{width:100%;border-collapse:collapse}
+        td,th{border-bottom:1px solid #ccc;padding:7px 3px;text-align:left}
+        .total{font-size:20px;font-weight:bold;text-align:right;margin-top:20px}
+        @media print{
+          @page{margin:8mm}
+          body{font-size:12px}
+        }
+      </style>
+    </head>
+    <body>
+      <h2>Sauna la Ionaș</h2>
+      <p>Нижня Апша</p>
+      <p>Дата: ${date}</p>
+      <table>
+        <tr><th>Блюдо</th><th>Кол-во</th><th>Цена</th><th>Сумма</th></tr>
+        ${rows}
+      </table>
+      <div class="total">Итого: ${total.toFixed(2)} грн</div>
+      <p style="text-align:center">Дякуємо за замовлення!</p>
+    </body>
+    </html>
+  `);
+  w.document.close();
+  w.focus();
+  w.print();
+}
+
+$("calcPdf").onclick=printReceipt;
+$("calcPrint").onclick=printReceipt;
+  function openDishForm(id){
     const d=dishes.find(x=>x.id===id);
     $("dishModalTitle").textContent=d?"Редагувати страву":"Додати страву";
     $("dishId").value=d?.id||""; $("dishName").value=d?.name||"";
