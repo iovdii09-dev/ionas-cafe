@@ -196,13 +196,17 @@ document.addEventListener("touchend", e => {
   }
 
   function renderAdmin(){
-    $("adminPanel").classList.toggle("show",isAdmin);
-    $("adminOpen").style.display=isAdmin?"none":"inline-block";
-    if(!isAdmin)return;Приховати</button>
-$("adminList").innerHTML=dishes.map(d=>`<div class="admin-row"><div><strong>${esc(d.name)}</strong><br><small>${money(d.price)} · ${esc(categories.find(c=>c.id===d.category_id)?.name||"")}</small></div><div class="row-actions"><button class="edit-small" data-edit="${esc(d.id)}">Змінити</button><button class="edit-small" data-hide="${esc(d.id)}">Приховати</button><button class="edit-small" data-delete="${esc(d.id)}">Видалити</button></div></div>`).join("") || '<div class="intro">Поки немає доступних страв.</div>';    $("adminList").querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>openDishForm(b.dataset.edit)));
-$("adminList").querySelectorAll("[data-delete]").forEach(b=>b.addEventListener("click",()=>deleteDish(b.dataset.delete)));    $("menu").querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>openDishForm(b.dataset.edit)));
-  }
+  $("adminPanel").classList.toggle("show",isAdmin);
+  $("adminOpen").style.display=isAdmin?"none":"inline-block";
+  if(!isAdmin)return;
 
+  $("adminList").innerHTML=dishes.map(d=>`<div class="admin-row"><div><strong>${esc(d.name)}</strong><br><small>${money(d.price)} · ${esc(categories.find(c=>c.id===d.category_id)?.name||"")}</small></div><div class="row-actions"><button class="edit-small" data-edit="${esc(d.id)}">Змінити</button><button class="edit-small" data-hide="${esc(d.id)}">Приховати</button><button class="edit-small" data-delete="${esc(d.id)}">Видалити</button></div></div>`).join("") || '<div class="intro">Поки немає доступних страв.</div>';
+
+  $("adminList").querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>openDishForm(b.dataset.edit)));
+  $("adminList").querySelectorAll("[data-hide]").forEach(b=>b.addEventListener("click",()=>toggleAvailability(b.dataset.hide,false)));
+  $("adminList").querySelectorAll("[data-delete]").forEach(b=>b.addEventListener("click",()=>deleteDish(b.dataset.delete)));
+  $("menu").querySelectorAll("[data-edit]").forEach(b=>b.addEventListener("click",()=>openDishForm(b.dataset.edit)));
+}
   function openDishForm(id){
     const d=dishes.find(x=>x.id===id);
     $("dishModalTitle").textContent=d?"Редагувати страву":"Додати страву";
