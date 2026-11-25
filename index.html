@@ -640,26 +640,21 @@ $("calcPrint").onclick=printReceipt;
 });
   $("loginForm").addEventListener("submit",async e=>{
     e.preventDefault(); $("loginError").textContent="Перевіряємо вхід…";
+    if ("Notification" in window && Notification.permission === "default") {
+  Notification.requestPermission();
+}
+
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+
+if (AudioCtx) {
+  window.waiterAudioContext = new AudioCtx();
+  window.waiterAudioContext.resume();
+}
     const {data,error}=await sb.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});
     if(error){$("loginError").textContent=error.message;return}
     if(data.user.email?.toLowerCase()!==ADMIN_EMAIL){await sb.auth.signOut();$("loginError").textContent="Цей акаунт не має прав адміністратора.";return}
     $("password").value=""; hideModals(); await refreshSession(); await loadData();
-    try {
-  if ("Notification" in window && Notification.permission === "default") {
-    await Notification.requestPermission();
-  }
-
-  const AudioCtx = window.AudioContext || window.webkitAudioContext;
-
-  if (AudioCtx) {
-    window.waiterAudioContext =
-      window.waiterAudioContext || new AudioCtx();
-
-    await window.waiterAudioContext.resume();
-  }
-} catch (e) {
-  console.log("Помилка активації звуку:", e);
-}
+    
   });
   $("logout").addEventListener("click",async()=>{await sb.auth.signOut();isAdmin=false;renderAdmin();renderMenu()});
   $("addDish").addEventListener("click",()=>openDishForm(""));
