@@ -100,6 +100,10 @@
       <div class="row-actions"><button id="addDish" class="primary">+ Додати страву</button><button id="logout" class="secondary">Вийти</button></div>
     </div>
     <div id="adminList" class="admin-list"></div>
+    <div id="waiterCalls" style="margin-top:20px;padding:15px;border:1px solid var(--gold);border-radius:12px">
+  <h3 style="color:var(--gold)">🔔 Виклики офіціанта</h3>
+  <div id="waiterCallsList">Немає нових викликів</div>
+</div>
     <div id="adminCalculator">
   <h3>Калькулятор суммы</h3>
   <div class="field">
@@ -142,6 +146,11 @@
   </section>
   <nav id="categories" class="cats" aria-label="Категорії меню"></nav>
   <h2 id="sectionTitle" class="section-title">Наше меню</h2>
+  <div style="text-align:center;margin:20px 0">
+  <button id="waiterCallBtn" class="primary" style="width:100%;padding:16px;font-size:17px">
+    🔔 Покликати офіціанта
+  </button>
+</div>
   <main id="menu" class="grid"><div class="status">Завантажуємо меню…</div></main>
   <footer>Ionaș Cafe · Нижня Апша · Ціни вказані у гривнях</footer>
 </div>
@@ -237,7 +246,35 @@ document.addEventListener("touchend", e => {
     categories=cr.data||[]; dishes=mr.data||[];
     renderCategories(); renderMenu(); renderAdmin();
   }
+async function loadWaiterCalls(){
+  const list = $("waiterCallsList");
+  if(!list) return;
 
+  const {data,error} = await sb
+    .from("waiter_calls")
+    .select("id,created_at,status,area")
+    .eq("status","new")
+    .order("created_at",{ascending:false});
+
+  if(error){
+    list.textContent = "Помилка завантаження викликів";
+    return;
+  }
+
+  if(!data || !data.length){
+    list.textContent = "Немає нових викликів";
+    return;
+  }
+
+  list.innerHTML = data.map(c => `
+    <div class="admin-row">
+      <div>
+        <strong>🔔 Виклик офіціанта</strong><br>
+        <small>${esc(c.area || "Загальний зал")} · ${new Date(c.created_at).toLocaleString("uk-UA")}</small>
+      </div>
+    </div>
+  `).join("");
+}
   function renderCategories(){
     const visibleCats = categories.filter(c=>dishes.some(d=>d.category_id===c.id));
     $("categories").innerHTML = `<button class="cat ${activeCategory==="all"?"active":""}" data-cat="all">Усі страви</button>` +
@@ -268,6 +305,7 @@ function renderAdmin(){
   $("adminPanel").classList.toggle("show",isAdmin);
   $("adminOpen").style.display=isAdmin?"none":"inline-block";
   if(!isAdmin)return;
+  loadWaiterCalls();
 
   $("adminList").innerHTML=dishes.map((d,i)=>`
     <div class="admin-row">
@@ -310,6 +348,9 @@ function renderAdmin(){
   );
 
   initCalculator();
+  setInterval(() => {
+  if(isAdmin) loadWaiterCalls();
+}, 10000);
 }
 
  
@@ -510,6 +551,21 @@ $("calcPrint").onclick=printReceipt;
 
   $("search").addEventListener("input",renderMenu);
   $("adminOpen").addEventListener("click",()=>{ $("loginError").textContent=""; showModal("loginModal") });
+  $("waiterCallBtn").addEventListener("click", async () => {
+  const { error } = await sb
+    .from("waiter_calls")
+    .insert({
+      status: "new",
+      area: "Загальний зал"
+    });
+
+  if (error) {
+    alert("Помилка виклику офіціанта");
+    return;
+  }
+
+  alert("Офіціанта викликано!");
+});
   $("loginForm").addEventListener("submit",async e=>{
     e.preventDefault(); $("loginError").textContent="Перевіряємо вхід…";
     const {data,error}=await sb.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});
