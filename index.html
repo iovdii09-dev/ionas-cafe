@@ -270,7 +270,8 @@ if (previousIds) {
   if (newCalls.length > 0) {
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      const audio = new AudioCtx();
+const audio = window.waiterAudioContext || new AudioCtx();
+      await audio.resume();
       const oscillator = audio.createOscillator();
       const gain = audio.createGain();
 
@@ -643,6 +644,22 @@ $("calcPrint").onclick=printReceipt;
     if(error){$("loginError").textContent=error.message;return}
     if(data.user.email?.toLowerCase()!==ADMIN_EMAIL){await sb.auth.signOut();$("loginError").textContent="Цей акаунт не має прав адміністратора.";return}
     $("password").value=""; hideModals(); await refreshSession(); await loadData();
+    try {
+  if ("Notification" in window && Notification.permission === "default") {
+    await Notification.requestPermission();
+  }
+
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+
+  if (AudioCtx) {
+    window.waiterAudioContext =
+      window.waiterAudioContext || new AudioCtx();
+
+    await window.waiterAudioContext.resume();
+  }
+} catch (e) {
+  console.log("Помилка активації звуку:", e);
+}
   });
   $("logout").addEventListener("click",async()=>{await sb.auth.signOut();isAdmin=false;renderAdmin();renderMenu()});
   $("addDish").addEventListener("click",()=>openDishForm(""));
