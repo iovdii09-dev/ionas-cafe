@@ -299,13 +299,20 @@ window.waiterCallIds = currentIds;
   }
 
   list.innerHTML = data.map(c => `
-    <div class="admin-row">
-      <div>
-        <strong>🔔 Виклик офіціанта</strong><br>
-        <small>${esc(c.area || "Загальний зал")} · ${new Date(c.created_at).toLocaleString("uk-UA")}</small>
-      </div>
+  <div class="admin-row">
+    <div>
+      <strong>🔔 Виклик офіціанта</strong><br>
+      <small>
+        ${esc(c.area || "Загальний зал")} ·
+        ${new Date(c.created_at).toLocaleString("uk-UA")}
+      </small>
     </div>
-  `).join("");
+    <button class="edit-small"
+      onclick="updateWaiterCall('${c.id}','done')">
+      ✓ Прийнято
+    </button>
+  </div>
+`).join("");
 }
 
   async function updateWaiterCall(id, status) {
