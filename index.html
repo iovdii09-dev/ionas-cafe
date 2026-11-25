@@ -311,6 +311,9 @@ window.waiterCallIds = currentIds;
       onclick="updateWaiterCall('${c.id}','done')">
       ✓ Прийнято
     </button>
+<button class="edit-small" onclick="deleteWaiterCall('${c.id}')">
+🗑 Видалити
+</button>
   </div>
 `).join("");
 }
@@ -319,6 +322,21 @@ window.waiterCallIds = currentIds;
   const { error } = await sb
     .from("waiter_calls")
     .update({ status: status })
+    .eq("id", id);
+
+  if (error) {
+    alert("Помилка: " + error.message);
+    return;
+  }
+
+  await loadWaiterCalls();
+}
+  async function deleteWaiterCall(id) {
+  if (!confirm("Видалити цей виклик?")) return;
+
+  const { error } = await sb
+    .from("waiter_calls")
+    .delete()
     .eq("id", id);
 
   if (error) {
