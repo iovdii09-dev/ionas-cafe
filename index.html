@@ -343,9 +343,9 @@ window.waiterCallIds = currentIds;
     alert("Помилка: " + error.message);
     return;
   }
-
   await loadWaiterCalls();
 }
+  window.deleteWaiterCall = deleteWaiterCall;
   function renderCategories(){
     const visibleCats = categories.filter(c=>dishes.some(d=>d.category_id===c.id));
     $("categories").innerHTML = `<button class="cat ${activeCategory==="all"?"active":""}" data-cat="all">Усі страви</button>` +
