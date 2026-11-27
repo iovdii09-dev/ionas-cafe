@@ -49,6 +49,9 @@
     .admin-panel{display:none;background:#211b16;border:1px solid var(--gold);border-radius:15px;padding:16px;margin:14px 0}
     .admin-panel.show{display:block}.admin-head{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
     .admin-list{display:grid;gap:8px;margin-top:14px}.admin-row{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid var(--line);padding:10px 0}
+    .admin-row-main{display:flex;align-items:center;gap:11px;min-width:0;flex:1}
+    .admin-dish-thumb{width:66px;height:58px;flex:0 0 66px;object-fit:cover;border-radius:9px;border:1px solid var(--line);background:#382d22}
+    .admin-row-info{min-width:0}.admin-row-info strong{display:block;overflow-wrap:anywhere}
     .admin-row small{color:var(--muted)} .row-actions{display:flex;gap:6px;flex-wrap:wrap}
     @media(max-width:620px){.grid{grid-template-columns:1fr}.dish img{width:104px}.wrap{padding:12px 13px 50px}header{padding-top:28px}.toolbar{margin-top:16px}}
     .calc-photo-btn{margin:8px 0;width:100%}
@@ -405,21 +408,35 @@ function renderAdmin(){
   if(!isAdmin)return;
   loadWaiterCalls();
 
-  $("adminList").innerHTML=dishes.map((d,i)=>`
-    <div class="admin-row">
-      <div>
-        <strong>${esc(d.name)}</strong><br>
-        <small>${money(d.price)} · ${esc(categories.find(c=>c.id===d.category_id)?.name||"")}</small>
-      </div>
-      <div class="row-actions">
-        <button class="edit-small" data-move-up="${esc(d.id)}" ${i===0?"disabled":""}>↑</button>
-        <button class="edit-small" data-move-down="${esc(d.id)}" ${i===dishes.length-1?"disabled":""}>↓</button>
-        <button class="edit-small" data-edit="${esc(d.id)}">Змінити</button>
-        <button class="edit-small" data-availability="${esc(d.id)}" data-value="${d.is_available?"false":"true"}">${d.is_available?"Приховати":"Показати"}</button>
-        <button class="edit-small" data-delete="${esc(d.id)}">Видалити</button>
-      </div>
-    </div>
-  `).join("") || '<div class="intro">Поки немає страв.</div>';
+  const adminDishRow = (d) => {
+    const i=dishes.findIndex(item=>item.id===d.id);
+    return `
+      <div class="admin-row">
+        <div class="admin-row-main">
+          <img class="admin-dish-thumb" src="${esc(d.image_url||placeholder)}" alt="${esc(d.name)}" loading="lazy" onerror="this.src='${placeholder}'">
+          <div class="admin-row-info">
+            <strong>${esc(d.name)}</strong>
+            <small>${money(d.price)}</small>
+          </div>
+        </div>
+        <div class="row-actions">
+          <button class="edit-small" data-move-up="${esc(d.id)}" ${i===0?"disabled":""}>↑</button>
+          <button class="edit-small" data-move-down="${esc(d.id)}" ${i===dishes.length-1?"disabled":""}>↓</button>
+          <button class="edit-small" data-edit="${esc(d.id)}">Змінити</button>
+          <button class="edit-small" data-availability="${esc(d.id)}" data-value="${d.is_available?"false":"true"}">${d.is_available?"Приховати":"Показати"}</button>
+          <button class="edit-small" data-delete="${esc(d.id)}">Видалити</button>
+        </div>
+      </div>`;
+  };
+  const adminSections = categories.map(category => {
+    const categoryDishes=dishes.filter(d=>d.category_id===category.id);
+    return `<section class="admin-category-section">
+      <h3 class="calc-photo-section-title">${esc(category.name)} <small>(${categoryDishes.length})</small></h3>
+      ${categoryDishes.length ? categoryDishes.map(adminDishRow).join("") : '<div class="intro">У цьому розділі поки немає страв.</div>'}
+    </section>`;
+  }).join("");
+  const uncategorized=dishes.filter(d=>!categories.some(c=>c.id===d.category_id));
+  $("adminList").innerHTML=adminSections + (uncategorized.length ? `<section class="admin-category-section"><h3 class="calc-photo-section-title">Без категорії</h3>${uncategorized.map(adminDishRow).join("")}</section>` : "") || '<div class="intro">Поки немає категорій.</div>';
 
   $("adminList").querySelectorAll("[data-edit]").forEach(b=>
     b.addEventListener("click",()=>openDishForm(b.dataset.edit))
