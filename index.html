@@ -51,6 +51,23 @@
     .admin-list{display:grid;gap:8px;margin-top:14px}.admin-row{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid var(--line);padding:10px 0}
     .admin-row small{color:var(--muted)} .row-actions{display:flex;gap:6px;flex-wrap:wrap}
     @media(max-width:620px){.grid{grid-template-columns:1fr}.dish img{width:104px}.wrap{padding:12px 13px 50px}header{padding-top:28px}.toolbar{margin-top:16px}}
+    .calc-photo-btn{margin:8px 0;width:100%}
+    .calc-photo-picker{display:none;gap:14px;margin:12px 0;padding:10px;border:1px solid var(--gold);border-radius:12px;max-height:420px;overflow:auto}
+    .calc-photo-picker.show{display:grid}
+    .calc-photo-section{min-width:0}
+    .calc-photo-section-title{font:600 17px "Playfair Display",serif;color:var(--gold);margin:2px 0 9px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+    .calc-photo-category-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:10px}
+    .calc-photo-item{padding:6px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--ink);text-align:left;min-width:0}
+    .calc-photo-item img{width:100%;height:78px;object-fit:cover;border-radius:7px;display:block;margin-bottom:5px}
+    .calc-photo-item strong{display:block;font-size:12px;line-height:1.25;overflow-wrap:anywhere}
+    .calc-photo-item small{color:var(--gold);font-size:11px}
+    .calc-photo-quantity{display:none;background:#17130f;border:1px solid var(--gold);border-radius:12px;padding:14px;margin:12px 0}
+    .calc-photo-quantity.show{display:block}
+    .calc-photo-quantity h4{margin:0 0 10px;color:var(--gold);font:600 18px "Playfair Display",serif}
+    .calc-photo-selected{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+    .calc-photo-selected img{width:76px;height:64px;object-fit:cover;border-radius:8px}
+    .calc-photo-quantity .field{margin:8px 0}
+    .calc-photo-quantity .field input,.calc-photo-quantity .field select{width:100%;background:#211b16;color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:11px}
   </style>
 </head>
 <body>
@@ -127,6 +144,15 @@
 </div>
 
 <button type="button" class="primary" id="calcAdd">Добавить блюдо</button>
+<button type="button" class="secondary calc-photo-btn" id="calcPhotoToggle">📷 Выбрать блюдо по фото</button>
+<div id="calcPhotoPicker" class="calc-photo-picker" aria-label="Выбор блюда по фото"></div>
+<div id="calcPhotoQuantity" class="calc-photo-quantity">
+  <h4>Добавить блюдо в расчёт</h4>
+  <div class="calc-photo-selected"><img id="calcPhotoSelectedImage" alt="Выбранное блюдо"><strong id="calcPhotoSelectedName"></strong></div>
+  <div class="field"><label for="calcPhotoQty">Количество / вес</label><input id="calcPhotoQty" type="number" min="0.01" step="0.01" value="1"></div>
+  <div class="field"><label for="calcPhotoUnit">Единица измерения</label><select id="calcPhotoUnit"><option value="шт">Штуки</option><option value="г">Граммы</option></select></div>
+  <div class="actions"><button type="button" class="secondary" id="calcPhotoCancel">Отмена</button><button type="button" class="primary" id="calcPhotoConfirm">Добавить в расчёт</button></div>
+</div>
 
 <div class="field">
   <label>Своя позиция</label>
@@ -534,6 +560,68 @@ async function moveDish(id,direction){
   draw();
 };
 
+  const photoPicker=$("calcPhotoPicker");
+  const photoToggle=$("calcPhotoToggle");
+  function renderPhotoPicker(){
+    if(!photoPicker)return;
+    // Показуємо страви в тих самих категоріях і порядку, що й основне меню.
+    const sections=categories.map(category=>({
+      name:category.name,
+      items:dishes.filter(d=>String(d.category_id)===String(category.id))
+    })).filter(section=>section.items.length);
+    const uncategorized=dishes.filter(d=>!categories.some(c=>String(c.id)===String(d.category_id)));
+    if(uncategorized.length)sections.push({name:"Інше",items:uncategorized});
+    photoPicker.innerHTML=sections.map(section=>`
+      <section class="calc-photo-section">
+        <h4 class="calc-photo-section-title">${esc(section.name)}</h4>
+        <div class="calc-photo-category-grid">${section.items.map(d=>`
+          <button type="button" class="calc-photo-item" data-calc-photo="${esc(d.id)}">
+            <img src="${esc(d.image_url||placeholder)}" alt="${esc(d.name)}" loading="lazy" onerror="this.src='${placeholder}'">
+            <strong>${esc(d.name)}</strong>
+            <small>${money(d.price)}</small>
+          </button>
+        `).join("")}</div>
+      </section>
+    `).join("") || '<div class="intro">У меню поки немає страв.</div>';
+  }
+  if(!initCalculator.photoHandlersReady){
+    let selectedPhotoDish=null;
+    const quantityPanel=$("calcPhotoQuantity");
+    const hideQuantityPanel=()=>{
+      selectedPhotoDish=null;
+      quantityPanel.classList.remove("show");
+    };
+    if(photoToggle)photoToggle.onclick=()=>{
+      renderPhotoPicker();
+      photoPicker.classList.toggle("show");
+      hideQuantityPanel();
+    };
+    if(photoPicker)photoPicker.addEventListener("click",e=>{
+      const button=e.target.closest("[data-calc-photo]");
+      if(!button)return;
+      const d=dishes.find(x=>String(x.id)===button.dataset.calcPhoto);
+      if(!d)return;
+      selectedPhotoDish=d;
+      $("calcPhotoSelectedName").textContent=d.name;
+      $("calcPhotoSelectedImage").src=d.image_url||placeholder;
+      $("calcPhotoQty").value=1;
+      $("calcPhotoUnit").value=$("calcUnit").value||"шт";
+      quantityPanel.classList.add("show");
+      $("calcPhotoQty").focus();
+    });
+    $("calcPhotoCancel").onclick=hideQuantityPanel;
+    $("calcPhotoConfirm").onclick=()=>{
+      if(!selectedPhotoDish)return;
+      const qty=Number($("calcPhotoQty").value);
+      const unit=$("calcPhotoUnit").value;
+      if(!Number.isFinite(qty)||qty<=0){alert("Укажите правильное количество или вес");$("calcPhotoQty").focus();return;}
+      initCalculator.items.push({name:selectedPhotoDish.name,price:Number(selectedPhotoDish.price),qty,unit});
+      draw();
+      hideQuantityPanel();
+      photoPicker.classList.remove("show");
+    };
+    initCalculator.photoHandlersReady=true;
+  }
   draw();
 }function printReceipt(){
   const items=initCalculator.items;
